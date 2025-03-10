@@ -58,6 +58,7 @@ jobs:
           CIBW_SKIP: pp*
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: auto universal2
+          CIBW_ARCHS_WINDOWS: auto ARM64
           CIBW_BUILD_FRONTEND: build
           CIBW_FREE_THREADED_SUPPORT: 1
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
