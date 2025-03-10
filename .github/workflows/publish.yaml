@@ -65,87 +65,87 @@ jobs:
         with:
           name: build-wheels-${{ matrix.os }}
           path: ./wheelhouse
-  hash:
-    # Generate hashes for the sdist and wheels, used later for provenance.
-    needs: [sdist, wheels]
-    runs-on: ubuntu-latest
-    outputs:
-      hash: ${{ steps.hash.outputs.hash }}
-    steps:
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          path: dist
-          pattern: build-*
-          merge-multiple: true
-      - name: generate hash
-        id: hash
-        run: cd dist && echo "hash=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
-  provenance:
-    needs: [hash]
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
-    with:
-      base64-subjects: ${{ needs.hash.outputs.hash }}
-      # When building more wheels, use the Python version as the provenance file name.
-      provenance-name: ${{ inputs.python && format('{0}.intoto.jsonl', inputs.python) || null }}
-  create-release:
-    # Upload the sdist, wheels, and provenance to a GitHub release. They remain
-    # available as build artifacts for a while as well.
-    needs: [provenance]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          path: dist
-          pattern: build-*
-          merge-multiple: true
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          pattern: '*.intoto.jsonl'
-      # When building a new tag, create a new draft release.
-      - if: github.event_name == 'push'
-        name: create release
-        run: >
-          gh release create --draft --repo ${{ github.repository }}
-          ${{ inputs.tag || github.ref_name }}
-          *.intoto.jsonl/* dist/*
-        env:
-          GH_TOKEN: ${{ github.token }}
-      # When running manually, update the existing release with more files.
-      - if: github.event_name == 'workflow_dispatch'
-        name: update release
-        run: >
-          gh release upload --repo ${{ github.repository }}
-          ${{ inputs.tag || github.ref_name }}
-          *.intoto.jsonl/* dist/*
-        env:
-          GH_TOKEN: ${{ github.token }}
-  publish-pypi:
-    needs: [provenance]
-    # Wait for approval before attempting to upload to PyPI. This allows reviewing the
-    # files in the draft release.
-    environment:
-      name: publish
-      url: https://pypi.org/project/MarkupSafe/${{ github.ref_name }}
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          path: dist
-          pattern: build-*
-          merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597 # v1.10.3
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-      - uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597 # v1.10.3
-        with:
-          skip-existing: true
+  # hash:
+  #   # Generate hashes for the sdist and wheels, used later for provenance.
+  #   needs: [sdist, wheels]
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     hash: ${{ steps.hash.outputs.hash }}
+  #   steps:
+  #     - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+  #       with:
+  #         path: dist
+  #         pattern: build-*
+  #         merge-multiple: true
+  #     - name: generate hash
+  #       id: hash
+  #       run: cd dist && echo "hash=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
+  # provenance:
+  #   needs: [hash]
+  #   permissions:
+  #     actions: read
+  #     id-token: write
+  #     contents: write
+  #   # Can't pin with hash due to how this workflow works.
+  #   uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+  #   with:
+  #     base64-subjects: ${{ needs.hash.outputs.hash }}
+  #     # When building more wheels, use the Python version as the provenance file name.
+  #     provenance-name: ${{ inputs.python && format('{0}.intoto.jsonl', inputs.python) || null }}
+  # create-release:
+  #   # Upload the sdist, wheels, and provenance to a GitHub release. They remain
+  #   # available as build artifacts for a while as well.
+  #   needs: [provenance]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+  #       with:
+  #         path: dist
+  #         pattern: build-*
+  #         merge-multiple: true
+  #     - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+  #       with:
+  #         pattern: '*.intoto.jsonl'
+  #     # When building a new tag, create a new draft release.
+  #     - if: github.event_name == 'push'
+  #       name: create release
+  #       run: >
+  #         gh release create --draft --repo ${{ github.repository }}
+  #         ${{ inputs.tag || github.ref_name }}
+  #         *.intoto.jsonl/* dist/*
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #     # When running manually, update the existing release with more files.
+  #     - if: github.event_name == 'workflow_dispatch'
+  #       name: update release
+  #       run: >
+  #         gh release upload --repo ${{ github.repository }}
+  #         ${{ inputs.tag || github.ref_name }}
+  #         *.intoto.jsonl/* dist/*
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  # publish-pypi:
+  #   needs: [provenance]
+  #   # Wait for approval before attempting to upload to PyPI. This allows reviewing the
+  #   # files in the draft release.
+  #   environment:
+  #     name: publish
+  #     url: https://pypi.org/project/MarkupSafe/${{ github.ref_name }}
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+  #       with:
+  #         path: dist
+  #         pattern: build-*
+  #         merge-multiple: true
+  #     - uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597 # v1.10.3
+  #       with:
+  #         repository-url: https://test.pypi.org/legacy/
+  #         skip-existing: true
+  #     - uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597 # v1.10.3
+  #       with:
+  #         skip-existing: true
