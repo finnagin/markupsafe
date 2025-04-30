@@ -17,6 +17,7 @@ jobs:
           - {name: 'Free-threaded', python: '3.13', free-threaded: true}
           - {python: '3.12'}
           - {name: Windows, python: '3.12', os: windows-latest}
+          - {name: Windows-arm, python: '3.12', os: windows-11-arm}
           - {name: Mac, python: '3.12', os: macos-latest}
           - {python: '3.11'}
           - {python: '3.10'}
